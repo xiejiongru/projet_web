@@ -1,1 +1,2 @@
-*.gz
+cd*.gz
+node_modules
