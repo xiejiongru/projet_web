@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  influx:
+    image: influxdb:2
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: pi
+      DOCKER_INFLUXDB_INIT_PASSWORD: ensg2025
+      DOCKER_INFLUXDB_INIT_ORG: ign
+      DOCKER_INFLUXDB_INIT_BUCKET: meteo
+    volumes:
+      - "./data:/var/lib/influxdb2"
+      - "./config:/etc/influxdb2"
