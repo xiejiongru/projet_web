@@ -40,6 +40,7 @@
         <li><strong>Pressure:</strong> {{ weatherData.pressure }} hPa</li>
         <li><strong>Wind speed:</strong> {{ weatherData.windSpeed }} m/s</li>
         <li><strong>Wind direction:</strong> {{ weatherData.windDirection }}</li>
+        <li><strong>Luminosity:</strong> {{ weatherData.luminosity }} Lux</li>  <!-- 添加光照度 -->
         <li><strong>GPS location：</strong> {{ selectedStationData.latitude }}, {{ selectedStationData.longitude }}</li>
         <li><strong>Last update:</strong> {{ weatherData.lastUpdate }}</li>
       </ul>
@@ -57,6 +58,7 @@ import MapView from '@/components/MapView.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
+
 export default {
   components: {
     MapView
@@ -64,29 +66,23 @@ export default {
   setup() {
     const router = useRouter();
 
-    // 默认选中的城市
     const selectedCity = ref("Paris");
 
-    // 定义气象站数据
     const weatherStations = ref([
       { id: 1, name: "Paris Station", latitude: 48.8566, longitude: 2.3522, elevation: 35 },
       { id: 2, name: "Lyon Station", latitude: 45.764, longitude: 4.8357, elevation: 173 },
       { id: 3, name: "Marseille Station", latitude: 43.2965, longitude: 5.3698, elevation: 25 }
     ]);
 
-    // 选中的天气站 ID
     const selectedStationId = ref(weatherStations.value[0].id);
 
-    // 计算当前选中的天气站对象
     const selectedStationData = computed(() => {
       return weatherStations.value.find(station => station.id === selectedStationId.value) || weatherStations.value[0];
     });
 
-    // 日期选择
     const dateOptions = ref(["Today", "Yesterday", "Last 7 days", "Last 30 days"]);
     const selectedDate = ref("Today");
 
-    // 定义气象数据
     const weatherData = ref({
       temperature: null,
       humidity: null,
@@ -94,34 +90,36 @@ export default {
       pressure: null,
       windSpeed: null,
       windDirection: null,
+      luminosity: null, // 新增光照度
       latitude: null,
       longitude: null,
       lastUpdate: null
     });
 
-    // 模拟获取气象数据（之后可以改成API请求）
     const fetchWeatherData = () => {
-      weatherData.value = {
-        temperature: 22.5,  // °C
-        humidity: 65,       // %
-        precipitation: 3.2, // mm
-        pressure: 1013,     // hPa
-        windSpeed: 5.2,     // m/s
+      // 假设从API获取数据
+      const apiResponse = {
+        temperature: 22.5,  
+        humidity: 65,       
+        precipitation: 3.2, 
+        pressure: 1013,     
+        windSpeed: 5.2,     
         windDirection: "NE",
+        luminosity: 1473,  // 光照度数据
         latitude: selectedStationData.value.latitude,
         longitude: selectedStationData.value.longitude,
         lastUpdate: new Date().toLocaleString()
       };
+
+      weatherData.value = apiResponse;
     };
 
     onMounted(fetchWeatherData);
 
-    // 监听下拉框的变化
     const updateSelectedStation = () => {
       fetchWeatherData();
     };
 
-    // 进入历史页面（后面再做）
     const goToHistory = () => {
       router.push('/history');
     };
@@ -140,7 +138,6 @@ export default {
   }
 };
 </script>
-  
 
 <style scoped>
 /* 布局 */
