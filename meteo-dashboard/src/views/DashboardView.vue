@@ -12,7 +12,8 @@
     </div>
 
     <div class="date-selector">
-      <button v-for="date in dateOptions" :key="date" @click="selectedDate = date" 
+      <button v-for="date in dateOptions" :key="date" 
+              @click="date === 'Last 7 days' || date === 'Last 30 days' ? goToHistory(date) : selectedDate = date" 
               :class="{ active: selectedDate === date }">
         {{ date }}
       </button>
