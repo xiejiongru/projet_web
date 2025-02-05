@@ -1,13 +1,12 @@
-<!-- src/views/DashboardView.vue -->
 <template>
   <div>
     <h1>{{ selectedCity }} Weather Condition</h1>
-    
+
     <div class="city-info">
       <p>
-        {{ weatherData.latitude }} <strong>N</strong>  
-        {{ weatherData.longitude }} <strong>W</strong>  
-        {{ weatherData.elevation }} <strong>m</strong> 
+        {{ selectedStationData.latitude }} <strong>N</strong>  
+        {{ selectedStationData.longitude }} <strong>W</strong>  
+        {{ selectedStationData.elevation }} <strong>m</strong> 
       </p>
     </div>
 
@@ -27,8 +26,8 @@
 
       <div class="weather-station">
         <label for="station-select"><strong>Select Weather Station:</strong></label>
-        <select id="station-select" v-model="selectedStation" @change="updateWeatherData">
-          <option v-for="station in weatherStations" :key="station.id" :value="station.name">
+        <select id="station-select" v-model="selectedStationId" @change="updateSelectedStation">
+          <option v-for="station in weatherStations" :key="station.id" :value="station.id">
             {{ station.name }}
           </option>
         </select>
@@ -41,23 +40,22 @@
         <li><strong>Pressure:</strong> {{ weatherData.pressure }} hPa</li>
         <li><strong>Wind speed:</strong> {{ weatherData.windSpeed }} m/s</li>
         <li><strong>Wind direction:</strong> {{ weatherData.windDirection }}</li>
-        <li><strong>GPS location：</strong> {{ weatherData.latitude }}, {{ weatherData.longitude }}</li>
+        <li><strong>GPS location：</strong> {{ selectedStationData.latitude }}, {{ selectedStationData.longitude }}</li>
         <li><strong>Last update:</strong> {{ weatherData.lastUpdate }}</li>
       </ul>
     </div>
 
     <!-- 右侧地图 -->
     <div class="map-container">
-      <MapView />
+      <MapView :station="selectedStationData" />
     </div>
   </div>
 </template>
 
 <script>
 import MapView from '@/components/MapView.vue';
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-
 
 export default {
   components: {
@@ -76,10 +74,16 @@ export default {
       { id: 3, name: "Marseille Station", latitude: 43.2965, longitude: 5.3698, elevation: 25 }
     ]);
 
-    const selectedStation = ref(weatherStations.value[0].name);
+    // 选中的天气站 ID
+    const selectedStationId = ref(weatherStations.value[0].id);
+
+    // 计算当前选中的天气站对象
+    const selectedStationData = computed(() => {
+      return weatherStations.value.find(station => station.id === selectedStationId.value) || weatherStations.value[0];
+    });
 
     // 日期选择
-    const dateOptions = ref(["Today", "Yesterday",  "Last 7 days", "Last 30 days"]);
+    const dateOptions = ref(["Today", "Yesterday", "Last 7 days", "Last 30 days"]);
     const selectedDate = ref("Today");
 
     // 定义气象数据
@@ -104,18 +108,16 @@ export default {
         pressure: 1013,     // hPa
         windSpeed: 5.2,     // m/s
         windDirection: "NE",
-        latitude: 48.8566,
-        longitude: 2.3522,
+        latitude: selectedStationData.value.latitude,
+        longitude: selectedStationData.value.longitude,
         lastUpdate: new Date().toLocaleString()
       };
     };
 
     onMounted(fetchWeatherData);
-    selectedStation.value = weatherStations.value[0].name;
-    fetchWeatherData();
 
     // 监听下拉框的变化
-    const updateWeatherData = () => {
+    const updateSelectedStation = () => {
       fetchWeatherData();
     };
 
@@ -124,7 +126,17 @@ export default {
       router.push('/history');
     };
 
-    return { selectedCity, weatherData, selectedStation, weatherStations, updateWeatherData, dateOptions, selectedDate, goToHistory };
+    return {
+      selectedCity,
+      weatherData,
+      selectedStationId,
+      selectedStationData,
+      weatherStations,
+      updateSelectedStation,
+      dateOptions,
+      selectedDate,
+      goToHistory
+    };
   }
 };
 </script>
