@@ -29,22 +29,22 @@ export default {
             label: "Temperature (°C)",
             data: labels.map(() => Math.random() * 10 + 10), // 生成随机温度数据
             borderColor: "red",
-            borderWidth: 2,
+            borderWidth: 1,
             fill: false,
           },
-          {
-            label: "Humidity (%)",
-            data: labels.map(() => Math.random() * 40 + 30), // 生成随机湿度数据
-            borderColor: "blue",
-            borderWidth: 2,
-            fill: false,
-          },
+          // {
+          //   label: "Humidity (%)",
+          //   data: labels.map(() => Math.random() * 40 + 30), // 生成随机湿度数据
+          //   borderColor: "blue",
+          //   borderWidth: 2,
+          //   fill: false,
+          // },
           {
             label: "Precipitation (mm)",
             data: labels.map(() => Math.random() * 5), // 生成随机降水数据
-            borderColor: "green",
-            borderWidth: 2,
-            fill: false,
+            borderColor: "blue",
+            borderWidth: 1,
+            fill: true,
           },
         ],
       };
