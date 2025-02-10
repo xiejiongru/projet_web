@@ -1,7 +1,6 @@
 <template>
   <div>
     <h1>{{ selectedCity }} Weather Condition</h1>
-
     <div class="city-info">
       <p>
         {{ selectedStationData.latitude }} <strong>N</strong>  
@@ -17,38 +16,33 @@
         {{ date }}
       </button>
     </div>
-  </div>
 
-  <div class="dashboard-container">
-    <!-- 左侧气象数据 -->
-    <div class="weather-info">
-      <h2>Weather Data</h2>
-
-      <div class="weather-station">
-        <label for="station-select"><strong>Select Weather Station:</strong></label>
-        <select id="station-select" v-model="selectedStationId" @change="updateSelectedStation">
-          <option v-for="station in weatherStations" :key="station.id" :value="station.id">
-            {{ station.name }}
-          </option>
-        </select>
+    <div class="dashboard-container">
+      <div class="weather-info">
+        <h2>Weather Data</h2>
+        <div class="weather-station">
+          <label for="station-select"><strong>Select Weather Station:</strong></label>
+          <select id="station-select" v-model="selectedStationId" @change="updateSelectedStation">
+            <option v-for="station in weatherStations" :key="station.id" :value="station.id">
+              {{ station.name }}
+            </option>
+          </select>
+        </div>
+        <ul>
+          <li><strong>Temperature：</strong> {{ weatherData.temperature }} °C</li>
+          <li><strong>Humidity：</strong> {{ weatherData.humidity }} %</li>
+          <li><strong>Precipitation:</strong> {{ weatherData.precipitation }} mm</li>
+          <li><strong>Pressure:</strong> {{ weatherData.pressure }} hPa</li>
+          <li><strong>Wind speed:</strong> {{ weatherData.windSpeed }} m/s</li>
+          <li><strong>Wind direction:</strong> {{ weatherData.windDirection }}</li>
+          <li><strong>Luminosity:</strong> {{ weatherData.luminosity }} Lux</li>
+          <li><strong>GPS location：</strong> {{ selectedStationData.latitude }}, {{ selectedStationData.longitude }}</li>
+          <li><strong>Last update:</strong> {{ weatherData.lastUpdate }}</li>
+        </ul>
       </div>
-
-      <ul>
-        <li><strong>Temperature：</strong> {{ weatherData.temperature }} °C</li>
-        <li><strong>Humidity：</strong> {{ weatherData.humidity }} %</li>
-        <li><strong>Precipitation:</strong> {{ weatherData.precipitation }} mm</li>
-        <li><strong>Pressure:</strong> {{ weatherData.pressure }} hPa</li>
-        <li><strong>Wind speed:</strong> {{ weatherData.windSpeed }} m/s</li>
-        <li><strong>Wind direction:</strong> {{ weatherData.windDirection }}</li>
-        <li><strong>Luminosity:</strong> {{ weatherData.luminosity }} Lux</li>  <!-- 添加光照度 -->
-        <li><strong>GPS location：</strong> {{ selectedStationData.latitude }}, {{ selectedStationData.longitude }}</li>
-        <li><strong>Last update:</strong> {{ weatherData.lastUpdate }}</li>
-      </ul>
-    </div>
-
-    <!-- 右侧地图 -->
-    <div class="map-container">
-      <MapView :station="selectedStationData" />
+      <div class="map-container">
+        <MapView :station="selectedStationData" />
+      </div>
     </div>
   </div>
 </template>
@@ -57,7 +51,7 @@
 import MapView from '@/components/MapView.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-
+import api from '@/services/api';
 
 export default {
   components: {
@@ -65,24 +59,18 @@ export default {
   },
   setup() {
     const router = useRouter();
-
     const selectedCity = ref("Paris");
-
     const weatherStations = ref([
       { id: 1, name: "Paris Station", latitude: 48.8566, longitude: 2.3522, elevation: 35 },
       { id: 2, name: "Lyon Station", latitude: 45.764, longitude: 4.8357, elevation: 173 },
       { id: 3, name: "Marseille Station", latitude: 43.2965, longitude: 5.3698, elevation: 25 }
     ]);
-
     const selectedStationId = ref(weatherStations.value[0].id);
-
     const selectedStationData = computed(() => {
       return weatherStations.value.find(station => station.id === selectedStationId.value) || weatherStations.value[0];
     });
-
     const dateOptions = ref(["Today", "Yesterday", "Last 7 days", "Last 30 days"]);
     const selectedDate = ref("Today");
-
     const weatherData = ref({
       temperature: null,
       humidity: null,
@@ -90,38 +78,49 @@ export default {
       pressure: null,
       windSpeed: null,
       windDirection: null,
-      luminosity: null, // 新增光照度
+      luminosity: null,
       latitude: null,
       longitude: null,
       lastUpdate: null
     });
 
-    const fetchWeatherData = () => {
-      // 假设从API获取数据
-      const apiResponse = {
-        temperature: 22.5,  
-        humidity: 65,       
-        precipitation: 3.2, 
-        pressure: 1013,     
-        windSpeed: 5.2,     
-        windDirection: "NE",
-        luminosity: 1473,  // 光照度数据
-        latitude: selectedStationData.value.latitude,
-        longitude: selectedStationData.value.longitude,
-        lastUpdate: new Date().toLocaleString()
-      };
-
-      weatherData.value = apiResponse;
+    const fetchWeatherData = async () => {
+      try {
+        const response = await api.fetchProbeData(selectedStationId.value);
+        weatherData.value = {
+          temperature: response.data.temperature,
+          humidity: response.data.humidity,
+          precipitation: response.data.precipitation,
+          pressure: response.data.pressure,
+          windSpeed: response.data.windSpeed,
+          windDirection: response.data.windDirection,
+          luminosity: response.data.luminosity,
+          latitude: selectedStationData.value.latitude,
+          longitude: selectedStationData.value.longitude,
+          lastUpdate: new Date().toLocaleString()
+        };
+      } catch (error) {
+        console.error('Failed to fetch weather data:', error);
+      }
     };
 
-    onMounted(fetchWeatherData);
+    onMounted(() => {
+      fetchWeatherData();
+      setInterval(fetchWeatherData, 5000);
+    });
 
     const updateSelectedStation = () => {
       fetchWeatherData();
     };
 
-    const goToHistory = () => {
-      router.push('/history');
+    const goToHistory = (dateRange) => {
+      router.push({
+        path: '/history',
+        query: {
+          stationId: selectedStationId.value,
+          dateRange: dateRange
+        }
+      });
     };
 
     return {

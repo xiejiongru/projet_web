@@ -186,4 +186,6 @@ function storeData(data) {
 }
 
 // Démarrage
-readSensorDataAndStore();
+module.exports = {
+    readSensorDataAndStore
+  };
