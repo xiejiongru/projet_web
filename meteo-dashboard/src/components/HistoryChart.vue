@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, onUnmounted } from 'vue';
 import Chart from 'chart.js/auto';
 
 export default {
@@ -63,28 +63,48 @@ export default {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            tooltip: {
+              enabled: true,
+            },
+          },
         },
       });
     };
 
     watch(() => props.selectedDate, renderChart); // 监听日期变化更新图表
     onMounted(renderChart);
+    onUnmounted(() => {
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+    });
 
     return {
       chartCanvas,
     };
   },
 };
+
 </script>
 
 <style scoped>
 .chart-container {
   width: 100%;
-  max-width: 600px;
+  max-width: 800px;
   height: 400px;
   margin: auto;
   background: #fff;
-  padding: 15px;
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
