@@ -1,9 +1,7 @@
 {
   "dependencies": {
     "@influxdata/influxdb-client": "^1.35.0",
-    "axios": "^1.7.9",
-    "echarts": "^5.6.0",
-    "leaflet": "^1.9.4",
-    "vue-router": "^4.5.0"
+    "node-nmea": "^2.0.0",
+    "ssh2": "^1.16.0"
   }
 }

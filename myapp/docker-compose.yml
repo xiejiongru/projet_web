@@ -1,0 +1,61 @@
+version: '3.7'
+
+services:
+  influxdb2:
+    image: influxdb:2
+    container_name: influxdb2
+    ports:
+      - "8086:8086"
+    environment:
+      INFLUXDB_HTTP_AUTH_ENABLED: "true"
+    secrets:
+      - influxdb2-admin-username
+      - influxdb2-admin-password
+      - influxdb2-admin-token
+    volumes:
+      - influxdb2-data:/var/lib/influxdb2
+      - influxdb2-config:/etc/influxdb2
+    networks:
+      - network_influx
+
+  node-app:
+    build: . # Utilise le Dockerfile pour construire l'image
+    container_name: node-app
+    volumes:
+      - ./routes:/app/routes # Monte uniquement le répertoire routes contenant recupdata.js
+      - ./package.json:/app/package.json # Monte package.json
+      - ./package-lock.json:/app/package-lock.json # Monte package-lock.json
+      - ./secret:/app/secret # Monte le répertoire secret contenant les fichiers de secrets
+      - /home/formation/.ssh/id_rsa:/root/.ssh/id_rsa:ro
+
+    working_dir: /app # Définit le répertoire de travail dans le conteneur
+    environment:
+      INFLUXDB_URL: "http://influxdb2:8086" # URL de l'InfluxDB
+    secrets:
+      - influxdb2-admin-password
+      - influxdb2-admin-token
+      - influxdb2-admin-username
+    depends_on:
+      - influxdb2
+    networks:
+      - network_influx
+    command: [ "tail", "-f", "/dev/null" ] # Exécute le script recupdata.js lors du démarrage du conteneur
+
+volumes:
+  influxdb2-data:
+  influxdb2-config:
+
+
+networks:
+  network_influx:
+    driver: bridge
+
+secrets:
+  influxdb2-admin-username:
+    file: ./secret/influxdb2-admin-username.txt
+  influxdb2-admin-password:
+    file: ./secret/influxdb2-admin-password.txt
+  influxdb2-admin-token:
+    file: ./secret/influxdb2-admin-token.txt
+  clessh:
+    file: ~/.ssh/id_rsa
