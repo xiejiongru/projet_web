@@ -6,12 +6,16 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-app.use('/api', indexRouter); 
+var dataRouter = require('./routes/data'); // Add data route
 
-var app = express();
+const app = express(); // Ensure express is initialized
+
+app.use('/api', indexRouter);
+app.use('/data', dataRouter); // Use data route
+
 const cors = require('cors');
 
-// view engine setup
+// View engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
@@ -26,24 +30,43 @@ app.use('/users', usersRouter);
 
 app.use(cors());
 
-// catch 404 and forward to error handler
+// Catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
 });
 
-// error handler
+// Error handler
 app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
+  // Set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
+  // Render the error page
   res.status(err.status || 500);
   res.render('error');
 });
 
-app.listen(3000, () => {
-  console.log('后端运行在 http://localhost:3000');
-});
+const port = 3000;
+const maxPortAttempts = 10; // Maximum port attempts
+
+function startServer(port, attempts = 0) {
+    app.listen(port, () => {
+        console.log(`Backend running at http://localhost:${port}`);
+    }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            if (attempts < maxPortAttempts) {
+                const newPort = port + 1;
+                console.log(`Port ${port} is in use, trying another port ${newPort}...`);
+                startServer(newPort, attempts + 1);
+            } else {
+                console.error('❌ Maximum port attempts reached, unable to start server');
+            }
+        } else {
+            console.error('❌ Error starting server:', err);
+        }
+    });
+}
+
+startServer(port);
 
 module.exports = app;

@@ -3,14 +3,14 @@ const { InfluxDB, Point } = require('@influxdata/influxdb-client');
 const fs = require('fs');
 const nmea = require('node-nmea');
 
-// Configuration SSH
+// SSH Configuration
 const sshConfig = {
     host: 'piensg027',
     username: 'pi',
-    privateKey: fs.readFileSync('/home/formation/.ssh/id_rsa')
+    privateKey: fs.existsSync('/home/formation/.ssh/id_rsa') ? fs.readFileSync('/home/formation/.ssh/id_rsa') : null
 };
 
-// Configuration InfluxDB
+// InfluxDB Configuration
 const influxConfig = {
     url: 'http://localhost:8086',
     token: 'LSg1A6kR8GFf-aVlmcl_CZcPRwW9FZ-TwKpd8YXUAsOhLRDCnEBQzRy9F6UcGl0N0AzgU5A5d16_JmouvzBg6A==',
@@ -22,38 +22,37 @@ const influxClient = new InfluxDB({ url: influxConfig.url, token: influxConfig.t
 const writeApi = influxClient.getWriteApi(influxConfig.org, influxConfig.bucket);
 writeApi.useDefaultTags({ host: 'raspberry' });
 
-
 let collectedData = {
-    id : 27,
+    id: 27,
     unit: {},
     data: {},
     filesProcessed: 0
 };
+
 /**
- * Fonction principale pour lire les fichiers de capteurs et stocker dans InfluxDB
+ * Main function to read sensor files and store data in InfluxDB
  */
 function readSensorDataAndStore() {
     const conn = new Client();
     conn.on('ready', () => {
-        console.log('✅ Connexion SSH établie.');
+        console.log('✅ SSH connection established.');
         const files = [
             '/dev/shm/gpsNmea',
             '/dev/shm/sensors'
         ];
 
-
         files.forEach(file => readFileAndStore(conn, file));
-    }).on('error', err => console.error('❌ Erreur SSH:', err))
+    }).on('error', err => console.error('❌ SSH error:', err))
       .connect(sshConfig);
 }
 
 /**
- * Lit un fichier distant via SSH et stocke les données dans InfluxDB
+ * Reads a remote file via SSH and stores data in InfluxDB
  */
 function readFileAndStore(conn, filePath) {
     conn.exec(`cat ${filePath}`, (err, stream) => {
         if (err) {
-            console.error(`❌ Erreur lecture ${filePath}:`, err);
+            console.error(`❌ Error reading ${filePath}:`, err);
             return;
         }
 
@@ -61,7 +60,7 @@ function readFileAndStore(conn, filePath) {
         stream.on('data', chunk => data += chunk.toString());
         stream.on('close', () => {
             conn.end();
-            console.log(`📂 Fichier ${filePath} lu.`);
+            console.log(`📂 File ${filePath} read.`);
 
             try {
                 const parsedData = parseData(filePath, data.trim());
@@ -70,15 +69,13 @@ function readFileAndStore(conn, filePath) {
                     collectedData.data = { ...collectedData.data, ...parsedData.data };
                     collectedData.filesProcessed++;
 
-                    // Une fois tous les fichiers lus, on stocke les données dans InfluxDB
+                    // Once all files are read, store data in InfluxDB
                     if (collectedData.filesProcessed === 2) {
-
-                        
                         storeData(collectedData);
                     }
                 }
             } catch (error) {
-                console.error(`❌ Erreur parsing ${filePath}:`, error);
+                console.error(`❌ Error parsing ${filePath}:`, error);
             }
         });
     });
@@ -87,7 +84,7 @@ function readFileAndStore(conn, filePath) {
 function convertDMMtoDD(coord, direction) {
     let match = coord.match(/^(\d+)(\d{2}\.\d+)$/);
     if (!match) {
-        console.error("Format incorrect :", coord);
+        console.error("Incorrect format:", coord);
         return null;
     }
 
@@ -96,7 +93,7 @@ function convertDMMtoDD(coord, direction) {
     
     let decimal = degrees + (minutes / 60);
 
-    // Appliquer la direction (N, S, E, W)
+    // Apply direction (N, S, E, W)
     if (direction === 'S' || direction === 'W') {
         decimal = -decimal;
     }
@@ -105,11 +102,11 @@ function convertDMMtoDD(coord, direction) {
 }
 
 /**
- * Parse les données en fonction du fichier source
+ * Parses data based on the source file
  */
 function parseData(filePath, data) {
     if (!data || data.trim() === '') {
-        console.warn(`⚠️ Données vides pour ${filePath}, ignorées.`);
+        console.warn(`⚠️ Empty data for ${filePath}, ignored.`);
         return null;
     }
 
@@ -119,7 +116,6 @@ function parseData(filePath, data) {
         let DataUnit = null;
 
         switch (filePath) {
-
             case '/dev/shm/gpsNmea': {
                 const nmeaData = data.trim().toString();
                 const nmeaTab = nmeaData.split("\n");
@@ -129,17 +125,15 @@ function parseData(filePath, data) {
                 const info_long = json.loc.dmm.longitude.split(",");
 
                 parsedData = {
-                    latitude: convertDMMtoDD(info_lat[0], info_lat[1]) ,
+                    latitude: convertDMMtoDD(info_lat[0], info_lat[1]),
                     longitude: convertDMMtoDD(info_long[0], info_long[1])
-                }
+                };
                 parsedUnit = {
-                    latitude : "DD",
-                    longitude : "DD"
+                    latitude: "DD",
+                    longitude: "DD"
+                };
 
-                }
-
-                console.log("gps :" + parsedData);
-
+                console.log("GPS data:", parsedData);
                 break;
             }
             case '/dev/shm/sensors': {
@@ -150,27 +144,26 @@ function parseData(filePath, data) {
                     parsedData[measure.name] = parseFloat(measure.value);
                     parsedUnit[measure.name] = measure.unit;
                 });
-
                 break;
             }
             default:
-                console.warn(`⚠️ Fichier non reconnu : ${filePath}`);
+                console.warn(`⚠️ Unrecognized file: ${filePath}`);
                 return null;
         }
 
-        DataUnit = {unit : parsedUnit,
+        DataUnit = {
+            unit: parsedUnit,
             data: parsedData
-        }
+        };
         return DataUnit;
     } catch (error) {
-        console.error(`❌ Erreur parsing ${filePath}:`, error.message);
+        console.error(`❌ Error parsing ${filePath}:`, error.message);
         return null;
     }
 }
 
-
 /**
- * Stocke les données dans InfluxDB
+ * Stores data in InfluxDB
  */
 function storeData(data) {
     const point = new Point('sensor_data').timestamp(new Date(data.data.date));
@@ -182,10 +175,10 @@ function storeData(data) {
     });
 
     writeApi.writePoint(point);
-    console.log(`✅ Données stockées dans InfluxDB :`, data);
+    console.log(`✅ Data stored in InfluxDB:`, data);
 }
 
-// Démarrage
+// Start
 module.exports = {
     readSensorDataAndStore
-  };
+};
