@@ -50,8 +50,8 @@ const port = 3000;
 const maxPortAttempts = 10; // Maximum port attempts
 
 function startServer(port, attempts = 0) {
-    app.listen(port, () => {
-        console.log(`Backend running at http://localhost:${port}`);
+    app.listen(port, '0.0.0.0', () => { // 绑定到所有网络接口
+        console.log(`Backend running at http://0.0.0.0:${port}`);
     }).on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
             if (attempts < maxPortAttempts) {
