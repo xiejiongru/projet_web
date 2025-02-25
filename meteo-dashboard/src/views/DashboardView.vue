@@ -1,13 +1,12 @@
-<!-- src/views/DashboardView.vue -->
 <template>
   <div>
     <h1>{{ selectedCity }} Weather Condition</h1>
-    
+
     <div class="city-info">
       <p>
-        {{ weatherData.latitude }} <strong>N</strong>  
-        {{ weatherData.longitude }} <strong>W</strong>  
-        {{ weatherData.elevation }} <strong>m</strong> 
+        {{ selectedStationData.latitude }} <strong>N</strong>  
+        {{ selectedStationData.longitude }} <strong>W</strong>  
+        {{ selectedStationData.elevation }} <strong>m</strong> 
       </p>
     </div>
 
@@ -27,8 +26,8 @@
 
       <div class="weather-station">
         <label for="station-select"><strong>Select Weather Station:</strong></label>
-        <select id="station-select" v-model="selectedStation" @change="updateWeatherData">
-          <option v-for="station in weatherStations" :key="station.id" :value="station.name">
+        <select id="station-select" v-model="selectedStationId" @change="updateSelectedStation">
+          <option v-for="station in weatherStations" :key="station.id" :value="station.id">
             {{ station.name }}
           </option>
         </select>
@@ -41,21 +40,22 @@
         <li><strong>Pressure:</strong> {{ weatherData.pressure }} hPa</li>
         <li><strong>Wind speed:</strong> {{ weatherData.windSpeed }} m/s</li>
         <li><strong>Wind direction:</strong> {{ weatherData.windDirection }}</li>
-        <li><strong>GPS location：</strong> {{ weatherData.latitude }}, {{ weatherData.longitude }}</li>
+        <li><strong>Luminosity:</strong> {{ weatherData.luminosity }} Lux</li>  <!-- 添加光照度 -->
+        <li><strong>GPS location：</strong> {{ selectedStationData.latitude }}, {{ selectedStationData.longitude }}</li>
         <li><strong>Last update:</strong> {{ weatherData.lastUpdate }}</li>
       </ul>
     </div>
 
     <!-- 右侧地图 -->
     <div class="map-container">
-      <MapView />
+      <MapView :station="selectedStationData" />
     </div>
   </div>
 </template>
 
 <script>
 import MapView from '@/components/MapView.vue';
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 
@@ -66,23 +66,23 @@ export default {
   setup() {
     const router = useRouter();
 
-    // 默认选中的城市
     const selectedCity = ref("Paris");
 
-    // 定义气象站数据
     const weatherStations = ref([
       { id: 1, name: "Paris Station", latitude: 48.8566, longitude: 2.3522, elevation: 35 },
       { id: 2, name: "Lyon Station", latitude: 45.764, longitude: 4.8357, elevation: 173 },
       { id: 3, name: "Marseille Station", latitude: 43.2965, longitude: 5.3698, elevation: 25 }
     ]);
 
-    const selectedStation = ref(weatherStations.value[0].name);
+    const selectedStationId = ref(weatherStations.value[0].id);
 
-    // 日期选择
-    const dateOptions = ref(["Today", "Yesterday",  "Last 7 days", "Last 30 days"]);
+    const selectedStationData = computed(() => {
+      return weatherStations.value.find(station => station.id === selectedStationId.value) || weatherStations.value[0];
+    });
+
+    const dateOptions = ref(["Today", "Yesterday", "Last 7 days", "Last 30 days"]);
     const selectedDate = ref("Today");
 
-    // 定义气象数据
     const weatherData = ref({
       temperature: null,
       humidity: null,
@@ -90,45 +90,54 @@ export default {
       pressure: null,
       windSpeed: null,
       windDirection: null,
+      luminosity: null, // 新增光照度
       latitude: null,
       longitude: null,
       lastUpdate: null
     });
 
-    // 模拟获取气象数据（之后可以改成API请求）
     const fetchWeatherData = () => {
-      weatherData.value = {
-        temperature: 22.5,  // °C
-        humidity: 65,       // %
-        precipitation: 3.2, // mm
-        pressure: 1013,     // hPa
-        windSpeed: 5.2,     // m/s
+      // 假设从API获取数据
+      const apiResponse = {
+        temperature: 22.5,  
+        humidity: 65,       
+        precipitation: 3.2, 
+        pressure: 1013,     
+        windSpeed: 5.2,     
         windDirection: "NE",
-        latitude: 48.8566,
-        longitude: 2.3522,
+        luminosity: 1473,  // 光照度数据
+        latitude: selectedStationData.value.latitude,
+        longitude: selectedStationData.value.longitude,
         lastUpdate: new Date().toLocaleString()
       };
+
+      weatherData.value = apiResponse;
     };
 
     onMounted(fetchWeatherData);
-    selectedStation.value = weatherStations.value[0].name;
-    fetchWeatherData();
 
-    // 监听下拉框的变化
-    const updateWeatherData = () => {
+    const updateSelectedStation = () => {
       fetchWeatherData();
     };
 
-    // 进入历史页面（后面再做）
     const goToHistory = () => {
       router.push('/history');
     };
 
-    return { selectedCity, weatherData, selectedStation, weatherStations, updateWeatherData, dateOptions, selectedDate, goToHistory };
+    return {
+      selectedCity,
+      weatherData,
+      selectedStationId,
+      selectedStationData,
+      weatherStations,
+      updateSelectedStation,
+      dateOptions,
+      selectedDate,
+      goToHistory
+    };
   }
 };
 </script>
-  
 
 <style scoped>
 /* 布局 */
