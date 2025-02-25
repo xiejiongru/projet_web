@@ -1,115 +1,170 @@
-# Projet web
+# Weather Station Project 🌦️  
+**Smart Weather Station System - Frontend & Data Visualization Solution**  
 
-## Raspberry / Groupe
+![Project Screenshot](screenshot.png) *(Replace with actual screenshot)*
 
-- **pi 27** : Romain, Jiongru
-- **pi 28** : Vanessa, Zijian
-- **pi 30** : Loïs, Jean-Baptiste
-- **pi 31** :
-- **pi 32** : Thomas, Antonin
+## Table of Contents
+- [Weather Station Project 🌦️](#weather-station-project-️)
+  - [Table of Contents](#table-of-contents)
+  - [Project Overview](#project-overview)
+  - [Current Progress](#current-progress)
+  - [Features](#features)
+    - [Implemented](#implemented)
+    - [Roadmap](#roadmap)
+  - [Tech Stack](#tech-stack)
+    - [Frontend](#frontend)
+    - [Backend](#backend)
+  - [Quick Start](#quick-start)
+    - [Tools](#tools)
+  - [Quick Start](#quick-start-1)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+    - [Configuration](#configuration)
+      - [Create .env files:](#create-env-files)
+      - [Launch Commands](#launch-commands)
+    - [Project Structure](#project-structure)
+    - [API Documentation](#api-documentation)
+      - [Example request:](#example-request)
+    - [License｜ MIT License](#license-mit-license)
+    - [Team｜ Roman Coin \& XIE Jiongru @TSI-C 2024](#team-roman-coin--xie-jiongru-tsi-c-2024)
 
-## Lien sujet
+## Project Overview
+A distributed weather monitoring system consisting of:
+- Sensor nodes (Sonde)
+- Central station (Centrale)
 
-[Projet Station Météo](https://web.iamvdo.me/js/exercices/projet-station-meteo/)
+Key functionalities:
+- Real-time data collection
+- Data storage
+- Visualization
 
-Chaque sonde est reliée à plusieurs capteurs qui donnent des informations diverses :
+Built with:
+- Frontend: Vue.js dashboard
+- Backend: Node.js/Express.js processing
 
-- **Température** : degré Celsius (précision : 2 chiffres après la virgule)
-- **Hygrométrie** : % (précision : 2 chiffres après la virgule)
-- **Pression atmosphérique** : Pa (Pascal) (précision : 2 chiffres après la virgule)
-- **Pluviométrie** : mm de pluie / m (précision : 2 chiffres après la virgule)
-- **Luminosité** : lux (précision : 2 chiffres après la virgule)
-- **Vitesse du vent** : km/h (précision : 0 chiffre après la virgule)
-- **Direction du vent** : degré (0° = Nord) (précision : 0 chiffre après la virgule)
-- **Position GPS et heure** (précision : 3 chiffres après la virgule)
+## Current Progress
+- [x] Frontend Base Framework (Vue 3)
+- [x] Real-time Data Cards
+- [x] Historical Charts (Chart.js)
+- [x] Map Integration (Leaflet)
+- [ ] User Subscription (WebSocket)
+- [ ] Multi-sensor Comparison Mode
+- [ ] Backend Data Aggregation
+- [ ] InfluxDB Query Optimization
 
-## Objectifs
+## Features
+### Implemented
+- Real-time weather data display (Temp/Humidity/Wind/etc)
+- Interactive historical line charts (24h/7d/1m ranges)
+- Sensor geolocation visualization (Leaflet maps)
+- Responsive layout (Mobile/Tablet/Desktop)
 
-Vous devrez réaliser un (ou des) programme(s) en **Node.js** qui :
+### Roadmap
+- [ ] Customizable Dashboard Layout
+- [ ] Data Anomaly Alerts
+- [ ] Multi-language Support
+- [ ] CSV/JSON Data Export
 
-1. Lit ces données
-2. Les stocke (ex. : [InfluxDB](https://www.influxdata.com/) semble adapté)
-3. Les expose via un **service Web** (port 80 ou 443)
+## Tech Stack
+### Frontend
+![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?logo=vuedotjs)  
+![Chart.js](https://img.shields.io/badge/Chart.js-3.x-FF6384?logo=chartdotjs)  
+![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet)
 
-### Fonctionnalités attendues
+### Backend
+![Node.js](https://im
 
-- **Dashboard** présentant toutes les dernières données d'une sonde (design inspiré des centrales météo du commerce)
-- **Historique** des données d'une sonde sur **1 semaine / 1 mois / 1 an**
-- **Comparatif** d'une donnée sur toutes les sondes (instantané ou graphique sur une durée définie)
-- **Cartographie** des sondes (position ajustable via configuration des générateurs factices)
+## Quick Start
 
-## Fichiers de données
+### Tools
+![Vite](https://img.shields.io/badge/Vite-4.x-646CFF?logo=vite)  
+![Swagger](https://img.shields.io/badge/Swagger-3.0-85EA2D?logo=swagger)
 
-### Capteurs (/dev/shm/sensors)
+## Quick Start
+### Prerequisites
+- Raspberry Pi 4B+ (Recommended)
+- Node.js ≥18.x
+- InfluxDB ≥2.7
 
-```json
-{
-  "date": "2025-02-04T08:23:54.313Z",
-  "measure": [
-    {"name": "temperature", "desc": "Température", "unit": "C", "value": "10.01"},
-    {"name": "pressure", "desc": "Pression", "unit": "hP", "value": "995.00"},
-    {"name": "humidity", "desc": "Humidité", "unit": "%", "value": "50.1"},
-    {"name": "luminosity", "desc": "Luminosité", "unit": "Lux", "value": "7"},
-    {"name": "wind_heading", "desc": "Direction du vent", "unit": "°", "value": "190.52"},
-    {"name": "wind_speed_avg", "desc": "Force moyenne du vent", "unit": "Kts", "value": "40.9"},
-    {"name": "wind_speed_max", "desc": "Force maxi du vent", "unit": "Kts", "value": "65.9"},
-    {"name": "wind_speed_min", "desc": "Force moyenne du vent", "unit": "Kts", "value": "25.8"}
-  ]
-}
+### Installation
+```bash
+# Clone repo
+git clone https://github.com/xiejiongru/projet_web.git
+
+# Install frontend deps
+cd frontend
+npm install
+
+# Install backend deps
+cd ../backend
+npm install
 ```
 
-### Pluviométrie (/dev/shm/rainCounter.log)
+### Configuration
+#### Create .env files:
+```ini
+# Frontend (frontend/.env)
+VITE_API_BASE_URL=http://localhost:3000/api
+VITE_MAPBOX_TOKEN=your_mapbox_token
 
-```
-2025-02-04T08:38:10.390Z
-```
-
-### GPS (/dev/shm/gpsNmea)
-
-```
-$GPGGA,084016.46,5130.421,N,00007.694,W,1,08,0.9,542.9,M,46.9,M, , *7B
-$GPRMC,084016.46,A,5130.421,N,00007.694,W,000.0,054.7,040225,020.3,E*49
-```
-
-### Température, Humidité, Pression (/dev/shm/tpg.log)
-
-```json
-{
-  "date": "2025-02-04T08:40:55.096441",
-  "temp": 41.336,
-  "hygro": 14.131,
-  "press": 1024.175
-}
+# Backend (backend/.env)
+INFLUXDB_URL=http://localhost:8086
+INFLUXDB_TOKEN=your_influxdb_token
+FAKE_SONDE=true  # Enable mock data mode
 ```
 
-## Accès SSH
+#### Launch Commands
+```bash
+# Frontend dev server
+cd frontend
+npm run dev
 
-```sh
-ssh pi@piensg{numéro}
+# Backend service
+cd ../backend
+npm start
+
+# Access points
+http://localhost:5173  # Frontend
+http://localhost:3000/api-docs  # Swagger UI
 ```
+### Project Structure
+```bash
+.
+├── frontend
+│   ├── public/            # Static assets
+│   ├── src
+│   │   ├── assets/        # Styles/icons
+│   │   ├── components/    # Vue components
+│   │   │   ├── Dashboard/
+│   │   │   ├── Charts/
+│   │   │   └── Map/
+│   │   ├── stores/        # Pinia store
+│   │   └── router/        # Vue Router
+│   └── vite.config.js
+│
+├── backend
+│   ├── routes/            # API endpoints
+│   │   ├── sensors.js
+│   │   └── weather.js
+│   ├── utils/             # Data processors
+│   ├── influxdb.js        # DB connection
+│   └── app.js             # Express entry
+│
+└── docs
+    └── api-spec.yml       # OpenAPI spec
+```
+### API Documentation
+We maintain API docs using Swagger UI:
+http://localhost:3000/api-docs
 
-## API
-
+#### Example request:
 ```javascript
-// Exemple de route pour récupérer les données en temps réel
-app.get('/api/station', (req, res) => {
-    res.json({
-        station: 'station id',
-        date: {
-            temp: data,
-            hygr: data,
-            prat: data,
-            pluv: data,
-            lumi: data,
-            vitv: data,
-            dirv: data,
-            posi: [x , y]
-        }
-    });
-});
+// Get latest sensor data
+fetch('/api/sensors/latest')
+  .then(response => response.json())
+  .then(data => {
+    console.log('Current temperature:', data.temperature);
+  });
 ```
-
-## Dashboard & Visualisation
-
-[Grafana Dashboards](https://grafana.com/grafana/dashboards/)
-
+### License｜ MIT License
+### Team｜ Roman Coin & XIE Jiongru @TSI-C 2024
