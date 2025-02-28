@@ -1,5 +1,9 @@
 # Weather Station Project 🌦️  
 **Smart Weather Station System - Frontend & Data Visualization Solution**  
+![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?logo=vuedotjs)
+![Express.js](https://img.shields.io/badge/Express.js-4.x-000000?logo=express)
+![InfluxDB](https://img.shields.io/badge/InfluxDB-2.7-20C0FF?logo=influxdb)
+![Vite](https://img.shields.io/badge/Vite-4.x-646CFF?logo=vite)  ![Swagger](https://img.shields.io/badge/Swagger-3.0-85EA2D?logo=swagger)
 
 ![Project Screenshot](screenshot.png) *(Replace with actual screenshot)*
 
@@ -11,12 +15,7 @@
   - [Features](#features)
     - [Implemented](#implemented)
     - [Roadmap](#roadmap)
-  - [Tech Stack](#tech-stack)
-    - [Frontend](#frontend)
-    - [Backend](#backend)
   - [Quick Start](#quick-start)
-    - [Tools](#tools)
-  - [Quick Start](#quick-start-1)
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
     - [Configuration](#configuration)
@@ -65,20 +64,6 @@ Built with:
 - [ ] Multi-language Support
 - [ ] CSV/JSON Data Export
 
-## Tech Stack
-### Frontend
-![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?logo=vuedotjs)  
-![Chart.js](https://img.shields.io/badge/Chart.js-3.x-FF6384?logo=chartdotjs)  
-![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet)
-
-### Backend
-![Node.js](https://im
-
-## Quick Start
-
-### Tools
-![Vite](https://img.shields.io/badge/Vite-4.x-646CFF?logo=vite)  
-![Swagger](https://img.shields.io/badge/Swagger-3.0-85EA2D?logo=swagger)
 
 ## Quick Start
 ### Prerequisites
@@ -168,3 +153,66 @@ fetch('/api/sensors/latest')
 ```
 ### License｜ MIT License
 ### Team｜ Roman Coin & XIE Jiongru @TSI-C 2024
+
+```mermaid
+graph TD
+    subgraph Sonde[Raspberry Pi - Sonde]
+        direction TB
+        SHAT[Sense HAT Python Service] -->|Writes to| tph.log
+        FakeSonde[FakeSonde Service] -->|Writes to| rain.log
+        FakeSonde -->|Writes to| gps.log
+        FakeSonde -->|Writes to| sensors.log
+        
+        subgraph NodeApp[Sonde Node.js App]
+            direction TB
+            Express[Express.js Server] -->|Routes| APIEndpoints[/API Endpoints/]
+            Express -->|Integrates| Swagger[Swagger UI]
+            Express -->|Reads from| InfluxDB[(InfluxDB)]
+            Express -->|WebSocket| WS[ws Library]
+            Swagger -->|Documents| APIEndpoints
+        end
+
+        Logs[[Log Files]] -->|Read by| NodeApp
+        APIEndpoints -->|Exposes| REST_API[REST API :80/443]
+        WS -->|Provides| WS_API[WebSocket API]
+    end
+
+    subgraph Centrale[Raspberry Pi - Centrale]
+        direction TB
+        subgraph CentraleNode[Centrale Express.js Server]
+            direction TB
+            CExpress[Express.js] -->|Routes| Dashboard[/Dashboard Routes/]
+            CExpress -->|API Client| Axios
+            CExpress -->|WebSocket| WS_Client[WebSocket Client]
+            CExpress -->|Serves| Static[Static Files]
+        end
+        
+        Static -->|Contains| VueFrontend[Vue.js Frontend]
+        VueFrontend -->|Uses| VueRouter[Vue Router]
+        VueFrontend -->|Uses| Vuex[Vuex Store]
+        VueFrontend -->|Visualization| ChartJS[Chart.js]
+        VueFrontend -->|Maps| Leaflet[Leaflet]
+    end
+
+    User[User Browser] -->|Accesses| VueFrontend
+    User -->|API Docs| Swagger
+    CentraleNode -->|Fetches data from| REST_API
+    CentraleNode -->|Subscribes to| WS_API
+
+    classDef hardware fill:#lightgrey,stroke:#333,stroke-width:2px;
+    classDef service fill:#8f8,stroke:#333,stroke-width:2px;
+    classDef storage fill:#ff8,stroke:#333,stroke-width:2px;
+    classDef api fill:#88f,stroke:#333,stroke-width:2px;
+    classDef frontend fill:#f88,stroke:#333,stroke-width:2px;
+    classDef lib fill:#8ff,stroke:#333,stroke-width:2px;
+    classDef docs fill:#c8f,stroke:#333,stroke-width:2px;
+
+    class SHAT,FakeSonde service
+    class Logs hardware
+    class NodeApp,CentraleNode service
+    class InfluxDB storage
+    class REST_API,WS_API api
+    class VueFrontend frontend
+    class VueRouter,Vuex,ChartJS,Leaflet,Axios,WS lib
+    class Swagger docs
+```
