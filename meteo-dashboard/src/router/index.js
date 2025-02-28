@@ -4,6 +4,7 @@ import MapView from "@/components/MapView.vue";
 import HistoryView from "@/views/HistoryView.vue";
 import HistoryChart from "@/components/HistoryChart.vue";
 
+
 const routes = [
   { path: "/", component: DashboardView },
   { path: "/map", component: MapView },

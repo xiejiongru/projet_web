@@ -5,7 +5,6 @@
 </template>
 
 <script>
-import { onMounted, watch, onUnmounted } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -14,9 +13,13 @@ export default {
   props: {
     station: Object 
   },
-  setup(props) {
-    let map, marker;
-
+  data() {
+    return {
+      map: null,
+      marker: null,
+    };
+  },
+  mounted() {
     // 在 setup 函数顶部添加
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
@@ -25,36 +28,42 @@ export default {
       shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
     });
 
-    onMounted(() => {
-      if (!props.station) return; // 防止未传入 station 时出错
-      map = L.map('map').setView([props.station.latitude, props.station.longitude], 10);
+    if (!this.station) return; // 防止未传入 station 时出错
+    this.map = L.map('map').setView([this.station.latitude, this.station.longitude], 10);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(this.map);
 
-      marker = L.marker([props.station.latitude, props.station.longitude])
-        .addTo(map)
-        .bindPopup(props.station.name)
-        .openPopup();
+    this.marker = L.marker([this.station.latitude, this.station.longitude])
+      .addTo(this.map)
+      .bindPopup(this.station.name)
+      .openPopup();
+
+    this.marker.on('click', () => {
+      this.$emit('marker-click', {
+        id: this.station.id,
+        temp: this.station.data.temperature 
+      });
     });
-
-    onUnmounted(() => {
-      if (map) {
-        map.remove();
-      }
-    });
-
-    watch(() => props.station, (newStation) => {
-      if (map && marker) {
-        marker.setLatLng([newStation.latitude, newStation.longitude])
-          .bindPopup(newStation.name)
-          .openPopup();
-        map.setView([newStation.latitude, newStation.longitude], 10);
-      }
-    }, { deep: true });
-
-    return {};
+  },
+  watch: {
+    station: {
+      handler(newStation) {
+        if (this.map && this.marker) {
+          this.marker.setLatLng([newStation.latitude, newStation.longitude])
+            .bindPopup(newStation.name)
+            .openPopup();
+          this.map.setView([newStation.latitude, newStation.longitude], 10);
+        }
+      },
+      deep: true
+    }
+  },
+  beforeUnmount() {
+    if (this.map) {
+      this.map.remove();
+    }
   }
 };
 </script>

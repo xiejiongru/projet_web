@@ -1,12 +1,16 @@
 <template>
   <div class="chart-container">
     <canvas ref="chartCanvas"></canvas>
+    <button @click="setQuickRange('1h')">最近1小时</button>
+    <button @click="setQuickRange('24h')">最近24小时</button>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, watch, onUnmounted } from 'vue';
+import { ref } from 'vue';
 import Chart from 'chart.js/auto';
+import { useWeatherStore } from '@/stores/weather'; 
+import {watch, onMounted, onUnmounted} from 'vue';
 
 export default {
   props: {
@@ -15,6 +19,7 @@ export default {
   setup(props) {
     const chartCanvas = ref(null);
     let chartInstance = null;
+    const weatherStore = useWeatherStore(); // 使用 Pinia store
 
     // 生成历史气候数据
     const generateHistoricalData = () => {
@@ -89,8 +94,21 @@ export default {
       }
     });
 
+
+    const setQuickRange = (range) => {
+      const now = new Date();
+      switch(range) {
+        case '1h': 
+          weatherStore.startDate = new Date(now - 3600*1000);
+          break;
+        case '24h':
+          weatherStore.startDate = new Date(now - 86400*1000);
+      }
+    };
+
     return {
       chartCanvas,
+      setQuickRange, // 返回 setQuickRange 函数
     };
   },
 };

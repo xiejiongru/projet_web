@@ -57,6 +57,7 @@
 import MapView from '@/components/MapView.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useWeatherStore } from '@/stores/weather'
 
 
 export default {
@@ -137,6 +138,19 @@ export default {
     };
   }
 };
+
+const weatherStore = useWeatherStore()
+const loadData = async () => {
+  const query = `
+    from(bucket: "tsi")
+      |> range(start: -1h)
+      |> filter(fn: (r) => r._measurement == "sensor_data")
+      |> last()
+  `;
+  
+  const data = await weatherStore.fetchData(query);
+  weatherData.value = processData(data); // 转换数据格式
+}
 </script>
 
 <style scoped>
