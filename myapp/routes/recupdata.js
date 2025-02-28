@@ -3,22 +3,19 @@ const fs = require('fs');
 const nmea = require('node-nmea');
 
 // Configuration InfluxDB
-const influxConfig = {
-    url: 'http://localhost:8086',
-    token: 'LSg1A6kR8GFf-aVlmcl_CZcPRwW9FZ-TwKpd8YXUAsOhLRDCnEBQzRy9F6UcGl0N0AzgU5A5d16_JmouvzBg6A==',
-    org: 'ensg',
-    bucket: 'tsi'
-};
 
-const influxClient = new InfluxDB({ url: influxConfig.url, token: influxConfig.token });
-const writeApi = influxClient.getWriteApi(influxConfig.org, influxConfig.bucket);
-writeApi.useDefaultTags({ host: 'local' });
+const token = fs.readFileSync('/home/formation/run/secrets/token.txt', 'utf8').trim();
 
-let collectedData = {
-    id: 27,
-    data: {},
-    filesProcessed: 0
-};
+
+
+const org = 'tsi';
+const bucket = 'tsi';
+const url = 'http://localhost:8086';
+
+// Création du client
+const influxDB = new InfluxDB({ url, token });
+const writeApi = influxDB.getWriteApi(org, bucket, 'ns'); // ns = précision en nanosecondes
+
 
 const files = [
     '/dev/shm/gpsNmea',
@@ -28,10 +25,20 @@ const files = [
 ];
 
 function readSensorDataAndStore() {
-    files.forEach(file => readFileAndStore(file));
+    let collectedData = {
+        id: 27,
+        data: {},
+        filesProcessed: 0
+    };
+    files.forEach(file => readFileAndStore(file, collectedData));
+    setTimeout(readSensorDataAndStore, 100000);
+
 }
 
-function readFileAndStore(filePath) {
+function readFileAndStore(filePath, collectedData) {
+
+
+
     fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) {
             console.error(`❌ Erreur lecture ${filePath}:`, err);
@@ -127,16 +134,27 @@ function parseData(filePath, data) {
 }
 
 function storeData(data) {
-    const point = new Point('sensor_data').timestamp(new Date(data.data.date));
+    try {
+        const point = new Point('sensor_data')
+            .tag('device', 'weather_station')
+            .floatField('latitude', data.data.latitude)
+            .floatField('longitude', data.data.longitude)
+            .floatField('temperature', data.data.temperature)
+            .floatField('pressure', data.data.pressure)
+            .floatField('humidity', data.data.humidity)
+            .floatField('luminosity', data.data.luminosity)
+            .floatField('wind_speed_avg', data.data.wind_speed_avg)
+            .floatField('wind_speed_max', data.data.wind_speed_max)
+            .floatField('wind_speed_min', data.data.wind_speed_min)
+            .timestamp(new Date(data.data.date));
 
-    Object.keys(data.data).forEach(key => {
-        if (key !== 'date') {
-            point.floatField(key, data.data[key]);
-        }
-    });
+        writeApi.writePoint(point);
+        writeApi.flush(); // Envoie les données immédiatement
 
-    writeApi.writePoint(point);
-    console.log(`✅ Données stockées dans InfluxDB :`, data);
+        console.log('✅ Données stockées dans InfluxDB');
+    } catch (error) {
+        console.error('❌ Erreur lors de l’envoi à InfluxDB:', error);
+    }
 }
 
 readSensorDataAndStore();
