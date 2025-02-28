@@ -166,5 +166,14 @@ fetch('/api/sensors/latest')
     console.log('Current temperature:', data.temperature);
   });
 ```
+#### Docker:
+```bash
+sudo docker stop influxdb
+sudo docker rm influxdb
+sudo docker volume rm influxdb_data
+
+sudo docker run -d --name influxdb -p 8086:8086 -v influxdb_data:/var/lib/influxdb2 -e INFLUXDB_DB=mydb -e INFLUXDB_ADMIN_USER=admin -e INFLUXDB_ADMIN_PASSWORD=adminpassword influxdb:latest
+```
+
 ### License｜ MIT License
-### Team｜ Roman Coin & XIE Jiongru @TSI-C 2024
+### Team｜ Romain Coin & XIE Jiongru @TSI-C 2024
