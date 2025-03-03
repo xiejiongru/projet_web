@@ -2,6 +2,7 @@ const { InfluxDB, Point } = require('@influxdata/influxdb-client');
 const fs = require('fs');
 const nmea = require('node-nmea');
 
+
 // Configuration InfluxDB
 
 const token = fs.readFileSync('/home/formation/run/secrets/token.txt', 'utf8').trim();
@@ -156,5 +157,97 @@ function storeData(data) {
         console.error('❌ Erreur lors de l’envoi à InfluxDB:', error);
     }
 }
+
+
+async function fetchInfluxDBData(bucket, token, org, days) {
+    const INFLUX_URL = `http://localhost:8086/api/v2/query?org=${org}`;
+
+    const query = `from(bucket: "${bucket}") |> range(start: -${days}d)`;
+
+    try {
+        const response = await fetch(INFLUX_URL, {
+            method: "POST",
+            headers: {
+                "Authorization": `Token ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                query: query,
+                dialect: {
+                    header: true,
+                    delimiter: ",",
+                    quoteChar: "\"",
+                    commentPrefix: "#",
+                    annotations: ["datatype", "group", "default"]
+                }
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP : ${response.status}`);
+        }
+
+        const data = await response.text(); // Récupérer les données en texte brut (CSV)
+        console.log("Données récupérées:", data); // Log des données brutes
+
+        // Organiser les données sans utiliser csv-parse
+        const organizedData = organizeDataByDate(data);
+        console.log("Données organisées :", organizedData);
+        return organizedData;
+
+    } catch (error) {
+        console.error("Erreur lors de la récupération des données :", error);
+    }
+}
+
+function organizeDataByDate(csvData) {
+    const lines = csvData.split("\n"); // Diviser les lignes du CSV
+
+    // Extraire les lignes 4 à 6 (indices 3, 4, 5)
+    const dataWithoutHeader = lines.slice(4);
+
+    const extractedData = dataWithoutHeader.map(line => {
+        const columns = line.split(","); // Séparer les colonnes par virgule
+        return {
+            date: columns[5],   // La date se trouve à l'index 5
+            value: columns[6],  // La valeur se trouve à l'index 6
+            field: columns[7]   // Le champ se trouve à l'index 7
+        };
+    });
+
+    console.log("Données extraites : ", extractedData);
+    let organizedData = {}
+    let tab = {};
+    tab[extractedData[0].field] = extractedData[0].value;
+    organizedData[extractedData[0].date] = tab;
+
+    extractedData.forEach(data => {
+        const { date, field, value } = data;
+
+        if (date) {
+
+            if (!organizedData[date]) {
+                tab = {};
+                tab[field] = value
+                organizedData[date] = tab;
+            }
+            else {
+
+                organizedData[date][field] = value;
+            }
+        }
+    });
+
+
+
+    return organizedData;
+}
+
+
+
+
+// Exemple d'utilisation
+fetchInfluxDBData(bucket, token, org, 1);
+
 
 readSensorDataAndStore();
