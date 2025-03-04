@@ -1,10 +1,12 @@
 <template>
   <div class="chart-container">
-    <!-- 温度/降水主图表 -->
-    <canvas ref="mainChart"></canvas>
+    <!-- 主图表容器 -->
+    <div class="main-chart">
+      <canvas ref="mainChart"></canvas>
+    </div>
     
-    <!-- 风向辅助图表 -->
-    <div class="wind-chart-container">
+    <!-- 风速图表容器 -->
+    <div class="wind-chart">
       <canvas ref="windChart"></canvas>
     </div>
   </div>
@@ -14,13 +16,13 @@
 import { ref, onMounted, watch, onUnmounted } from 'vue';
 import Chart from 'chart.js/auto';
 
-// 风向方向映射表
-const windDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-
 export default {
   name: "HistoryChart",
   props: {
-    selectedDate: String
+    selectedDate: {
+      type: String,
+      default: "Last 7 days"
+    }
   },
   setup(props) {
     const mainChart = ref(null);
@@ -28,34 +30,32 @@ export default {
     let mainChartInstance = null;
     let windChartInstance = null;
 
-    // 生成模拟数据（含风向）
     const generateHistoricalData = () => {
       const isWeekly = props.selectedDate === "Last 7 days";
       const labels = isWeekly 
-        ? Array.from({ length: 7 }, (_, i) => `Day ${i+1}`)
-        : Array.from({ length: 4 }, (_, i) => `Week ${i+1}`);
+        ? Array.from({ length: 7 }, (_, i) => `Day ${i + 1}`)
+        : Array.from({ length: 4 }, (_, i) => `Week ${i + 1}`);
 
-      // 生成基础数据
       const baseData = labels.map(() => ({
         temp: Math.random() * 15 + 10,
         precip: Math.random() * 8
       }));
 
-      // 计算周期极值
       const getExtremes = (data, key) => ({
         max: Math.max(...data.map(d => d[key])),
         min: Math.min(...data.map(d => d[key]))
       });
-
       const tempExtremes = getExtremes(baseData, 'temp');
+
+      const windSpeedData = labels.map(() => Math.random() * 10 + 5);
+      const windDirectionData = labels.map(() => Math.random() * 360);
 
       return {
         labels,
-        tempExtremes, // 额外返回极值数据
-        main: { // 用于主图表
+        tempExtremes,
+        main: {
           labels,
           datasets: [
-            // 温度折线（整合极值标注）
             {
               label: "Temperature (°C)",
               data: baseData.map(d => d.temp),
@@ -72,7 +72,6 @@ export default {
               ),
               pointBorderWidth: 2
             },
-            // 降水柱状图
             {
               label: "Precipitation (mm)",
               data: baseData.map(d => d.precip),
@@ -81,20 +80,25 @@ export default {
             }
           ]
         },
-        wind: { // 用于风向图表
-          labels: windDirections,
+        wind: {
+          labels,
           datasets: [
             {
-              label: "Wind Direction (°)",
-              data: baseData.map(() => Math.random() * 360),
-              backgroundColor: 'rgba(0, 123, 255, 0.5)'
+              label: "Wind Speed (m/s)",
+              data: windSpeedData,
+              borderColor: "purple",
+              borderWidth: 1,
+              fill: false,
+              pointStyle: 'triangle',
+              pointRotation: windDirectionData,
+              pointRadius: 6,
+              tension: 0.3
             }
           ]
         }
       };
     };
 
-    // 创建主图表
     const createMainChart = (data) => {
       return new Chart(mainChart.value.getContext('2d'), {
         type: 'line',
@@ -114,9 +118,9 @@ export default {
                   let label = ctx.dataset.label;
                   if (ctx.datasetIndex === 0) { // 温度数据
                     if (value === data.tempExtremes.max) {
-                      label += ' (Max)';
+                      label += ' (最高)';
                     } else if (value === data.tempExtremes.min) {
-                      label += ' (Min)';
+                      label += ' (最低)';
                     }
                   }
                   return `${label}: ${value.toFixed(1)}°C`;
@@ -130,13 +134,13 @@ export default {
               type: 'linear',
               display: true,
               position: 'left',
-              title: { text: 'Temperature (°C)', display: true }
+              title: { display: true, text: 'Temperature (°C)' }
             },
             y1: {
               type: 'linear',
               display: true,
               position: 'right',
-              title: { text: 'Precipitation (mm)', display: true },
+              title: { display: true, text: 'Precipitation (mm)' },
               grid: { drawOnChartArea: false }
             }
           }
@@ -144,34 +148,73 @@ export default {
       });
     };
 
-    // 创建风向图表
     const createWindChart = (data) => {
       return new Chart(windChart.value.getContext('2d'), {
-        type: 'polarArea',
-        data: data.wind,
+        type: 'line',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: "Wind Speed (m/s)",
+            data: data.wind.datasets[0].data,
+            borderColor: "#9C27B0",
+            borderWidth: 2,
+            fill: false,
+            pointStyle: 'triangle', // 使用三角形标记
+            pointRotation: data.wind.datasets[0].pointRotation,
+            pointRadius: data.wind.datasets[0].data.map(speed => 
+              Math.min(8, Math.max(4, speed)) // 动态半径4-8
+            ),
+            pointBackgroundColor: data.wind.datasets[0].data.map(speed => 
+              speed > 8 ? '#FF1744' : 
+              speed > 5 ? '#FF9100' : 
+              '#00E676'
+            ),
+            tension: 0.2
+          }]
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'right' },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  const degrees = ctx.raw;
-                  const dirIndex = Math.round(degrees / 45) % 8;
-                  return `${windDirections[dirIndex]} (${degrees.toFixed(0)}°)`;
-                }
-              }
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 12 } }
+            },
+            y: {
+              title: { 
+                display: true, 
+                text: 'Wind Speed (m/s)',
+                font: { size: 14 }
+              },
+              ticks: { stepSize: 2 }
             }
           },
-          scales: {
-            r: {
-              pointLabels: { display: false },
-              ticks: { display: false }
+          plugins: {
+            legend: {
+              labels: { font: { size: 14 } }
+            },
+            tooltip: {
+              bodyFont: { size: 14 },
+              callbacks: {
+                label: (ctx) => {
+                  const speed = ctx.parsed.y;
+                  const dir = ctx.dataset.pointRotation[ctx.dataIndex];
+                  return [
+                    `风速: ${speed.toFixed(1)} m/s`,
+                    `风向: ${getWindDirectionText(dir)} (${dir.toFixed(0)}°)`
+                  ];
+                }
+              }
             }
           }
         }
       });
+    };
+    // 新增函数：根据风向角度获取文字描述
+    const getWindDirectionText = (angle) => {
+      const directions = ['北风', '东北风', '东风', '东南风', '南风', '西南风', '西风', '西北风'];
+      const index = Math.round((angle % 360) / 45) % 8;
+      return directions[index];
     };
 
     const renderCharts = () => {
@@ -197,18 +240,31 @@ export default {
 
 <style scoped>
 .chart-container {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
-  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
   padding: 20px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
 }
 
-.wind-chart-container {
+.main-chart, .wind-chart {
   position: relative;
   height: 400px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  padding: 20px;
+  transition: transform 0.3s ease;
+}
+
+.wind-chart {
+  height: 350px;
+  background: #f8f9fa;
+}
+
+.main-chart:hover, .wind-chart:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
 }
 </style>
