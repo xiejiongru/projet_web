@@ -114,9 +114,9 @@ export default {
                   let label = ctx.dataset.label;
                   if (ctx.datasetIndex === 0) { // 温度数据
                     if (value === data.tempExtremes.max) {
-                      label += ' (最高)';
+                      label += ' (Max)';
                     } else if (value === data.tempExtremes.min) {
-                      label += ' (最低)';
+                      label += ' (Min)';
                     }
                   }
                   return `${label}: ${value.toFixed(1)}°C`;
