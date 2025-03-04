@@ -16,7 +16,10 @@
       </button>
     </div>
   </div>
-
+  
+  <div class="weather-card">
+  <div class="card-content">
+    
   <div class="dashboard-container">
     <!-- 左侧气象数据 -->
     <div class="weather-info">
@@ -76,6 +79,8 @@
       <MapView :station="selectedStationData" />
     </div>
   </div>
+  </div> <!-- 添加闭合标签 -->
+  </div> <!-- 添加闭合标签 -->
 </template>
 
 <script>
@@ -198,7 +203,31 @@ export default {
 }
 
 .weather-info li {
-  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.weather-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  padding: 20px;
+}
+
+.card-header {
+  border-bottom: 2px solid #eee;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+}
+
+.card-header h2 {
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* 选择气象站 */

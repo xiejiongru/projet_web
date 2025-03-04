@@ -37,6 +37,12 @@ export default {
         .addTo(map)
         .bindPopup(props.station.name)
         .openPopup();
+
+      L.control.scale({
+        position: 'bottomright',
+        metric: true,
+        imperial: false
+      }).addTo(map)
     });
 
     onUnmounted(() => {
