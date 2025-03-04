@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div>
+        <h1 id="cityTitle">Paris Weather Condition</h1>
+        <div class="city-info">
+            <p id="stationInfo">
+                48.8566 <strong>N</strong> 2.3522 <strong>W</strong> 35 <strong>m</strong>
+            </p>
+        </div>
+        <div class="date-selector" id="dateSelector">
+            <button class="date-btn active" data-date="Today">Today</button>
+            <button class="date-btn" data-date="Yesterday">Yesterday</button>
+            <button class="date-btn" data-date="Last 7 days">Last 7 days</button>
+            <button class="date-btn" data-date="Last 30 days">Last 30 days</button>
+        </div>
+    </div>
+    <div class="dashboard-container">
+        <div class="weather-info">
+            <h2>Weather Data</h2>
+            <div class="weather-station">
+                <label for="station-select"><strong>Select Weather Station:</strong></label>
+                <select id="station-select">
+                    <option value="1">Paris Station</option>
+                    <option value="2">Lyon Station</option>
+                    <option value="3">Marseille Station</option>
+                </select>
+            </div>
+            <ul id="weatherData">
+                <li><strong>Temperature：</strong> <span id="temperature"></span> °C</li>
+                <li><strong>Humidity：</strong> <span id="humidity"></span> %</li>
+                <li><strong>Precipitation:</strong> <span id="precipitation"></span> mm</li>
+                <li><strong>Pressure:</strong> <span id="pressure"></span> hPa</li>
+                <li><strong>Wind speed:</strong> <span id="windSpeed"></span> m/s</li>
+                <li><strong>Wind direction:</strong> <span id="windDirection"></span></li>
+                <li><strong>Luminosity:</strong> <span id="luminosity"></span> Lux</li>
+                <li><strong>GPS location：</strong> <span id="latitude"></span>, <span id="longitude"></span></li>
+                <li><strong>Last update:</strong> <span id="lastUpdate"></span></li>
+            </ul>
+        </div>
+        <div class="map-container" id="mapContainer"></div>
+    </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

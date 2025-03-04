@@ -1,155 +1,122 @@
-const { Client } = require('ssh2');
 const { InfluxDB, Point } = require('@influxdata/influxdb-client');
 const fs = require('fs');
 const nmea = require('node-nmea');
 
-// Configuration SSH
-const sshConfig = {
-    host: 'piensg027',
-    username: 'pi',
-    privateKey: fs.readFileSync('/home/formation/.ssh/id_rsa')
-};
 
 // Configuration InfluxDB
-const influxConfig = {
-    url: 'http://localhost:8086',
-    token: 'LSg1A6kR8GFf-aVlmcl_CZcPRwW9FZ-TwKpd8YXUAsOhLRDCnEBQzRy9F6UcGl0N0AzgU5A5d16_JmouvzBg6A==',
-    org: 'ensg',
-    bucket: 'tsi'
-};
 
-const influxClient = new InfluxDB({ url: influxConfig.url, token: influxConfig.token });
-const writeApi = influxClient.getWriteApi(influxConfig.org, influxConfig.bucket);
-writeApi.useDefaultTags({ host: 'raspberry' });
+const token = fs.readFileSync('/run/secrets/token.txt', 'utf8').trim();
 
 
-let collectedData = {
-    id : 27,
-    unit: {},
-    data: {},
-    filesProcessed: 0
-};
-/**
- * Fonction principale pour lire les fichiers de capteurs et stocker dans InfluxDB
- */
+
+const org = 'tsi';
+const bucket = 'tsi';
+const url = 'http://localhost:8086';
+
+// Création du client
+const influxDB = new InfluxDB({ url, token });
+const writeApi = influxDB.getWriteApi(org, bucket, 'ns'); // ns = précision en nanosecondes
+
+
+const files = [
+    '/dev/shm/gpsNmea',
+    '/dev/shm/sensors',
+    '/dev/shm/rainCounter.log',
+    '/dev/shm/tph.log'
+];
+
 function readSensorDataAndStore() {
-    const conn = new Client();
-    conn.on('ready', () => {
-        console.log('✅ Connexion SSH établie.');
-        const files = [
-            '/dev/shm/gpsNmea',
-            '/dev/shm/sensors'
-        ];
-
-
-        files.forEach(file => readFileAndStore(conn, file));
-    }).on('error', err => console.error('❌ Erreur SSH:', err))
-      .connect(sshConfig);
+    let collectedData = {
+        id: 27,
+        data: {},
+        filesProcessed: 0
+    };
+    files.forEach(file => readFileAndStore(file, collectedData));
 }
 
-/**
- * Lit un fichier distant via SSH et stocke les données dans InfluxDB
- */
-function readFileAndStore(conn, filePath) {
-    conn.exec(`cat ${filePath}`, (err, stream) => {
+function readFileAndStore(filePath, collectedData) {
+
+
+
+    fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) {
             console.error(`❌ Erreur lecture ${filePath}:`, err);
             return;
         }
 
-        let data = '';
-        stream.on('data', chunk => data += chunk.toString());
-        stream.on('close', () => {
-            conn.end();
-            console.log(`📂 Fichier ${filePath} lu.`);
+        console.log(`📂 Fichier ${filePath} lu.`);
+        try {
+            const parsedData = parseData(filePath, data.trim());
+            if (parsedData) {
+                collectedData.data = { ...collectedData.data, ...parsedData };
+                collectedData.filesProcessed++;
 
-            try {
-                const parsedData = parseData(filePath, data.trim());
-                if (parsedData) {
-                    collectedData.unit = { ...collectedData.unit, ...parsedData.unit };
-                    collectedData.data = { ...collectedData.data, ...parsedData.data };
-                    collectedData.filesProcessed++;
-
-                    // Une fois tous les fichiers lus, on stocke les données dans InfluxDB
-                    if (collectedData.filesProcessed === 2) {
-
-                        
-                        storeData(collectedData);
-                    }
+                if (collectedData.filesProcessed === files.length) {
+                    console.log(collectedData);
+                    storeData(collectedData);
                 }
-            } catch (error) {
-                console.error(`❌ Erreur parsing ${filePath}:`, error);
             }
-        });
+        } catch (error) {
+            console.error(`❌ Erreur parsing ${filePath}:`, error);
+        }
     });
 }
 
 function convertDMMtoDD(coord, direction) {
-    let match = coord.match(/^(\d+)(\d{2}\.\d+)$/);
+    let match = coord.match(/^([0-9]+)([0-9]{2}\.\d+)$/);
     if (!match) {
         console.error("Format incorrect :", coord);
         return null;
     }
-
     let degrees = parseInt(match[1], 10);
     let minutes = parseFloat(match[2]);
-    
     let decimal = degrees + (minutes / 60);
-
-    // Appliquer la direction (N, S, E, W)
-    if (direction === 'S' || direction === 'W') {
-        decimal = -decimal;
-    }
-
-    return decimal;
+    return (direction === 'S' || direction === 'W') ? -decimal : decimal;
 }
 
-/**
- * Parse les données en fonction du fichier source
- */
 function parseData(filePath, data) {
-    if (!data || data.trim() === '') {
+    if (!data) {
         console.warn(`⚠️ Données vides pour ${filePath}, ignorées.`);
         return null;
     }
 
     try {
-        let parsedData = null;
-        let parsedUnit = null;
-        let DataUnit = null;
+        let parsedData = {};
 
         switch (filePath) {
-
             case '/dev/shm/gpsNmea': {
-                const nmeaData = data.trim().toString();
-                const nmeaTab = nmeaData.split("\n");
-                json = nmea.parse(nmeaTab[1]);
+                const nmeaLines = data.split("\n");
+                const json = nmea.parse(nmeaLines[1]);
 
+                console.log(json);
                 const info_lat = json.loc.dmm.latitude.split(",");
                 const info_long = json.loc.dmm.longitude.split(",");
 
                 parsedData = {
-                    latitude: convertDMMtoDD(info_lat[0], info_lat[1]) ,
+                    latitude: convertDMMtoDD(info_lat[0], info_lat[1]),
                     longitude: convertDMMtoDD(info_long[0], info_long[1])
-                }
-                parsedUnit = {
-                    latitude : "DD",
-                    longitude : "DD"
-
-                }
-
-                console.log("gps :" + parsedData);
-
+                };
                 break;
             }
             case '/dev/shm/sensors': {
+
                 const json = JSON.parse(data);
-                parsedData = { date: json.date };
-                parsedUnit = {};
+                parsedData.date = json.date;
                 json.measure.forEach(measure => {
                     parsedData[measure.name] = parseFloat(measure.value);
-                    parsedUnit[measure.name] = measure.unit;
+
                 });
+
+                break;
+            }
+            case '/dev/shm/rainCounter.log': {
+                parsedData["raindate"] = data;
+
+                break;
+            }
+            case '/dev/shm/tph.log': {
+                const json = JSON.parse(data);
+                parsedData = { date: json.date, temp: json.temp, hygro: json.hygro, press: json.press };
 
                 break;
             }
@@ -158,32 +125,126 @@ function parseData(filePath, data) {
                 return null;
         }
 
-        DataUnit = {unit : parsedUnit,
-            data: parsedData
-        }
-        return DataUnit;
+        return parsedData;
     } catch (error) {
         console.error(`❌ Erreur parsing ${filePath}:`, error.message);
         return null;
     }
 }
 
-
-/**
- * Stocke les données dans InfluxDB
- */
 function storeData(data) {
-    const point = new Point('sensor_data').timestamp(new Date(data.data.date));
+    try {
+        const point = new Point('sensor_data')
+            .tag('device', 'weather_station')
+            .floatField('latitude', data.data.latitude)
+            .floatField('longitude', data.data.longitude)
+            .floatField('temperature', data.data.temperature)
+            .floatField('pressure', data.data.pressure)
+            .floatField('humidity', data.data.humidity)
+            .floatField('luminosity', data.data.luminosity)
+            .floatField('wind_speed_avg', data.data.wind_speed_avg)
+            .floatField('wind_speed_max', data.data.wind_speed_max)
+            .floatField('wind_speed_min', data.data.wind_speed_min)
+            .timestamp(new Date(data.data.date));
 
-    Object.keys(data.data).forEach(key => {
-        if (key !== 'date') {
-            point.floatField(key, data.data[key]);
+        writeApi.writePoint(point);
+        writeApi.flush(); // Envoie les données immédiatement
+
+        console.log('✅ Données stockées dans InfluxDB');
+    } catch (error) {
+        console.error('❌ Erreur lors de l’envoi à InfluxDB:', error);
+    }
+}
+
+
+async function fetchInfluxDBData(bucket, token, org, days) {
+    const INFLUX_URL = `http://localhost:8086/api/v2/query?org=${org}`;
+
+    const query = `from(bucket: "${bucket}") |> range(start: -${days}d)`;
+
+    try {
+        const response = await fetch(INFLUX_URL, {
+            method: "POST",
+            headers: {
+                "Authorization": `Token ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                query: query,
+                dialect: {
+                    header: true,
+                    delimiter: ",",
+                    quoteChar: "\"",
+                    commentPrefix: "#",
+                    annotations: ["datatype", "group", "default"]
+                }
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP : ${response.status}`);
+        }
+
+        const data = await response.text(); // Récupérer les données en texte brut (CSV)
+
+        // Organiser les données sans utiliser csv-parse
+        const organizedData = organizeDataByDate(data);
+        console.log("Données organisées :", organizedData);
+        return organizedData;
+
+    } catch (error) {
+        console.error("Erreur lors de la récupération des données :", error);
+    }
+}
+
+function organizeDataByDate(csvData) {
+    const lines = csvData.split("\n"); // Diviser les lignes du CSV
+
+    // Extraire les lignes 4 à 6 (indices 3, 4, 5)
+    const dataWithoutHeader = lines.slice(4);
+
+    const extractedData = dataWithoutHeader.map(line => {
+        const columns = line.split(","); // Séparer les colonnes par virgule
+        return {
+            date: columns[5],   // La date se trouve à l'index 5
+            value: Math.floor(columns[6] * 100) / 100,  // La valeur se trouve à l'index 6
+            field: columns[7]   // Le champ se trouve à l'index 7
+        };
+    });
+
+
+    let organizedData = {}
+    let tab = {};
+    tab[extractedData[0].field] = extractedData[0].value;
+    organizedData[extractedData[0].date] = tab;
+
+    extractedData.forEach(data => {
+        const { date, field, value } = data;
+
+        if (date) {
+
+            if (!organizedData[date]) {
+                tab = {};
+                tab[field] = value
+                organizedData[date] = tab;
+            }
+            else {
+
+                organizedData[date][field] = value;
+            }
         }
     });
 
-    writeApi.writePoint(point);
-    console.log(`✅ Données stockées dans InfluxDB :`, data);
+
+
+    return organizedData;
 }
 
-// Démarrage
+
+
+
+// Exemple d'utilisation
+fetchInfluxDBData(bucket, token, org, 1);
+
+
 readSensorDataAndStore();
