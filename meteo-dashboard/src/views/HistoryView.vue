@@ -57,6 +57,15 @@ export default {
       elevation: 35
     });
 
+    const tempExtremes = ref({
+      max: 0,
+      min: 0
+    });
+
+    const handleUpdateExtremes = (newExtremes) => {
+      tempExtremes.value = newExtremes;
+    };
+
     const dateOptions = ref([
       "Today", 
       "Yesterday", 
@@ -84,6 +93,8 @@ export default {
       selectedDate,
       dateOptions,
       changeDate,
+      tempExtremes,
+      handleUpdateExtremes,
       dateIcon
     };
   }
@@ -155,5 +166,44 @@ export default {
 
 .date-selector button i {
   width: 20px;
+}
+
+.extremes-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.summary-card {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.summary-card i {
+  font-size: 1.5rem;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.temp-max i {
+  color: #FF0000;
+  background: rgba(255,0,0,0.1);
+}
+
+.temp-min i {
+  color: #00AAFF;
+  background: rgba(0,170,255,0.1);
+}
+
+.summary-card label {
+  display: block;
+  color: #666;
+  font-size: 0.9rem;
 }
 </style>

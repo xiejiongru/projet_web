@@ -18,7 +18,10 @@ import Chart from 'chart.js/auto';
 const windDirections = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
 export default {
-  props: ['selectedDate'],
+  name: "HistoryChart",
+  props: {
+    selectedDate: String
+  },
   setup(props) {
     const mainChart = ref(null);
     const windChart = ref(null);
@@ -29,41 +32,64 @@ export default {
     const generateHistoricalData = () => {
       const isWeekly = props.selectedDate === "Last 7 days";
       const labels = isWeekly 
-        ? Array.from({length: 7}, (_, i) => `Day ${i+1}`)
-        : Array.from({length: 4}, (_, i) => `Week ${i+1}`);
+        ? Array.from({ length: 7 }, (_, i) => `Day ${i+1}`)
+        : Array.from({ length: 4 }, (_, i) => `Week ${i+1}`);
+
+      // 生成基础数据
+      const baseData = labels.map(() => ({
+        temp: Math.random() * 15 + 10,
+        precip: Math.random() * 8
+      }));
+
+      // 计算周期极值
+      const getExtremes = (data, key) => ({
+        max: Math.max(...data.map(d => d[key])),
+        min: Math.min(...data.map(d => d[key]))
+      });
+
+      const tempExtremes = getExtremes(baseData, 'temp');
 
       return {
-        main: {
+        labels,
+        tempExtremes, // 额外返回极值数据
+        main: { // 用于主图表
           labels,
           datasets: [
+            // 温度折线（整合极值标注）
             {
               label: "Temperature (°C)",
-              data: labels.map(() => Math.random() * 15 + 10),
+              data: baseData.map(d => d.temp),
               borderColor: '#FF6B6B',
-              backgroundColor: 'rgba(255,107,107,0.2)',
-              yAxisID: 'y',
-              tension: 0.3
+              backgroundColor: '#FF6B6B',
+              tension: 0.3,
+              pointRadius: baseData.map(d => 
+                d.temp === tempExtremes.max || d.temp === tempExtremes.min ? 6 : 3
+              ),
+              pointBackgroundColor: baseData.map(d => 
+                d.temp === tempExtremes.max ? '#FF0000' :
+                d.temp === tempExtremes.min ? '#00AAFF' : 
+                'rgba(255,107,107,0.2)'
+              ),
+              pointBorderWidth: 2
             },
+            // 降水柱状图
             {
               label: "Precipitation (mm)",
-              data: labels.map(() => Math.random() * 8),
+              data: baseData.map(d => d.precip),
               backgroundColor: '#4D96FF',
-              yAxisID: 'y1',
               type: 'bar'
             }
           ]
         },
-        wind: {
-          labels,
-          datasets: [{
-            label: "Wind Direction",
-            data: labels.map(() => Math.floor(Math.random() * 360)),
-            backgroundColor: labels.map(() => 
-              `hsl(${Math.random() * 360}, 70%, 50%)`
-            ),
-            type: 'polarArea',
-            borderWidth: 1
-          }]
+        wind: { // 用于风向图表
+          labels: windDirections,
+          datasets: [
+            {
+              label: "Wind Direction (°)",
+              data: baseData.map(() => Math.random() * 360),
+              backgroundColor: 'rgba(0, 123, 255, 0.5)'
+            }
+          ]
         }
       };
     };
@@ -84,14 +110,16 @@ export default {
             tooltip: {
               callbacks: {
                 label: (ctx) => {
-                  let label = ctx.dataset.label || '';
-                  if (label) label += ': ';
-                  if (ctx.parsed.y !== null) {
-                    label += ctx.dataset.type === 'bar' 
-                      ? `${ctx.parsed.y} mm`
-                      : `${ctx.parsed.y.toFixed(1)}°C`;
+                  const value = ctx.parsed.y;
+                  let label = ctx.dataset.label;
+                  if (ctx.datasetIndex === 0) { // 温度数据
+                    if (value === data.tempExtremes.max) {
+                      label += ' (最高)';
+                    } else if (value === data.tempExtremes.min) {
+                      label += ' (最低)';
+                    }
                   }
-                  return label;
+                  return `${label}: ${value.toFixed(1)}°C`;
                 }
               }
             }
@@ -148,7 +176,6 @@ export default {
 
     const renderCharts = () => {
       const data = generateHistoricalData();
-      
       if (mainChartInstance) mainChartInstance.destroy();
       if (windChartInstance) windChartInstance.destroy();
 
