@@ -1,13 +1,11 @@
 <template>
   <div>
-    <h1>{{ selectedCity }} Weather Condition</h1>
 
     <div class="city-info">
-      <p>
-        {{ selectedStationData.latitude }} <strong>N</strong>  
-        {{ selectedStationData.longitude }} <strong>W</strong>  
-        {{ selectedStationData.elevation }} <strong>m</strong> 
-      </p>
+      <h1>
+        <i :class="`fas fa-${weatherStatus}`"></i>
+        {{ selectedCity }} Weather Condition
+      </h1>
     </div>
 
     <div class="date-selector">
@@ -34,15 +32,42 @@
       </div>
 
       <ul>
-        <li><strong>Temperature：</strong> {{ weatherData.temperature }} °C</li>
-        <li><strong>Humidity：</strong> {{ weatherData.humidity }} %</li>
-        <li><strong>Precipitation:</strong> {{ weatherData.precipitation }} mm</li>
-        <li><strong>Pressure:</strong> {{ weatherData.pressure }} hPa</li>
-        <li><strong>Wind speed:</strong> {{ weatherData.windSpeed }} m/s</li>
-        <li><strong>Wind direction:</strong> {{ weatherData.windDirection }}</li>
-        <li><strong>Luminosity:</strong> {{ weatherData.luminosity }} Lux</li>  <!-- 添加光照度 -->
-        <li><strong>GPS location：</strong> {{ selectedStationData.latitude }}, {{ selectedStationData.longitude }}</li>
-        <li><strong>Last update:</strong> {{ weatherData.lastUpdate }}</li>
+        <li>
+          <i class="fas fa-thermometer-half"></i>
+          <strong>Temperature：</strong> {{ weatherData.temperature }} °C
+        </li>
+        <li>
+          <i class="fas fa-tint"></i>
+          <strong>Humidity：</strong> {{ weatherData.humidity }} %
+        </li>
+        <li>
+          <i class="fas fa-cloud-rain"></i>
+          <strong>Precipitation:</strong> {{ weatherData.precipitation }} mm
+        </li>
+        <li>
+          <i class="fas fa-tachometer-alt"></i>
+          <strong>Pressure:</strong> {{ weatherData.pressure }} hPa
+        </li>
+        <li>
+          <i class="fas fa-wind"></i>
+          <strong>Wind speed:</strong> {{ weatherData.windSpeed }} m/s
+        </li>
+        <li>
+          <i class="fas fa-arrow-circle-up"></i>
+          <strong>Wind direction:</strong> {{ weatherData.windDirection }}
+        </li>
+        <li>
+          <i class="fas fa-sun"></i>
+          <strong>Luminosity:</strong> {{ weatherData.luminosity }} Lux
+        </li>
+        <li>
+          <i class="fas fa-map-marker-alt"></i>
+          <strong>GPS location：</strong> {{ selectedStationData.latitude }}, {{ selectedStationData.longitude }}
+        </li>
+        <li>
+          <i class="fas fa-clock"></i>
+          <strong>Last update:</strong> {{ weatherData.lastUpdate }}
+        </li>
       </ul>
     </div>
 
@@ -57,7 +82,6 @@
 import MapView from '@/components/MapView.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-
 
 export default {
   components: {
@@ -78,6 +102,12 @@ export default {
 
     const selectedStationData = computed(() => {
       return weatherStations.value.find(station => station.id === selectedStationId.value) || weatherStations.value[0];
+    });
+
+    const weatherStatus = computed(() => {
+      if (weatherData.value.precipitation > 5) return 'cloud-showers-heavy'
+      if (weatherData.value.luminosity > 2000) return 'sun'
+      return 'cloud'
     });
 
     const dateOptions = ref(["Today", "Yesterday", "Last 7 days", "Last 30 days"]);
@@ -133,7 +163,8 @@ export default {
       updateSelectedStation,
       dateOptions,
       selectedDate,
-      goToHistory
+      goToHistory,
+      weatherStatus // 确保 weatherStatus 被返回
     };
   }
 };
@@ -208,4 +239,3 @@ export default {
   color: white;
 }
 </style>
-
