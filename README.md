@@ -1,5 +1,9 @@
 # Weather Station Project 🌦️  
 **Smart Weather Station System - Frontend & Data Visualization Solution**  
+![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?logo=vuedotjs)
+![Express.js](https://img.shields.io/badge/Express.js-4.x-000000?logo=express)
+![InfluxDB](https://img.shields.io/badge/InfluxDB-2.7-20C0FF?logo=influxdb)
+![Vite](https://img.shields.io/badge/Vite-4.x-646CFF?logo=vite)  ![Swagger](https://img.shields.io/badge/Swagger-3.0-85EA2D?logo=swagger)
 
 ![Project Screenshot](screenshot.png) *(Replace with actual screenshot)*
 
@@ -11,12 +15,7 @@
   - [Features](#features)
     - [Implemented](#implemented)
     - [Roadmap](#roadmap)
-  - [Tech Stack](#tech-stack)
-    - [Frontend](#frontend)
-    - [Backend](#backend)
   - [Quick Start](#quick-start)
-    - [Tools](#tools)
-  - [Quick Start](#quick-start-1)
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
     - [Configuration](#configuration)
@@ -65,20 +64,6 @@ Built with:
 - [ ] Multi-language Support
 - [ ] CSV/JSON Data Export
 
-## Tech Stack
-### Frontend
-![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?logo=vuedotjs)  
-![Chart.js](https://img.shields.io/badge/Chart.js-3.x-FF6384?logo=chartdotjs)  
-![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet)
-
-### Backend
-![Node.js](https://im
-
-## Quick Start
-
-### Tools
-![Vite](https://img.shields.io/badge/Vite-4.x-646CFF?logo=vite)  
-![Swagger](https://img.shields.io/badge/Swagger-3.0-85EA2D?logo=swagger)
 
 ## Quick Start
 ### Prerequisites
@@ -176,4 +161,5 @@ sudo docker run -d --name influxdb -p 8086:8086 -v influxdb_data:/var/lib/influx
 ```
 
 ### License｜ MIT License
-### Team｜ Romain Coin & XIE Jiongru @TSI-C 2024
+### Team｜ Roman Coin & XIE Jiongru @TSI-C 2024
+
