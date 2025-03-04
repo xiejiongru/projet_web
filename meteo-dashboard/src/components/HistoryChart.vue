@@ -30,6 +30,24 @@ export default {
     let mainChartInstance = null;
     let windChartInstance = null;
 
+    const createArrowImage = (color = '#9C27B0') => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 24;
+      canvas.height = 24;
+      
+      // 绘制更长的三角形
+      ctx.translate(12, 12);
+      ctx.beginPath();
+      ctx.moveTo(0, -15);  // 增加箭头长度
+      ctx.lineTo(6, 12);   // 调整底部宽度
+      ctx.lineTo(-6, 12);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      
+      return canvas;
+    };
     const generateHistoricalData = () => {
       const isWeekly = props.selectedDate === "Last 7 days";
       const labels = isWeekly 
@@ -149,6 +167,14 @@ export default {
     };
 
     const createWindChart = (data) => {
+    // 生成带颜色的箭头（增加尺寸）
+      const arrowImages = data.wind.datasets[0].data.map(speed => {
+        const color = speed > 8 ? '#FF1744' : 
+                    speed > 5 ? '#FF9100' : 
+                    '#00E676';
+        return createArrowImage(color);
+      });
+
       return new Chart(windChart.value.getContext('2d'), {
         type: 'line',
         data: {
@@ -156,23 +182,22 @@ export default {
           datasets: [{
             label: "Wind Speed (m/s)",
             data: data.wind.datasets[0].data,
-            borderColor: "#9C27B0",
-            borderWidth: 2,
+            borderColor: "#9C27B080",
+            borderWidth: 1,
             fill: false,
-            pointStyle: 'triangle', // 使用三角形标记
+            pointStyle: arrowImages,
             pointRotation: data.wind.datasets[0].pointRotation,
             pointRadius: data.wind.datasets[0].data.map(speed => 
-              Math.min(8, Math.max(4, speed)) // 动态半径4-8
-            ),
-            pointBackgroundColor: data.wind.datasets[0].data.map(speed => 
-              speed > 8 ? '#FF1744' : 
-              speed > 5 ? '#FF9100' : 
-              '#00E676'
-            ),
-            tension: 0.2
-          }]
+              Math.min(10, Math.max(6, speed))  // 增加半径范围
+            )  // 修复这里缺少的闭合括号
+          }]  // 修复数组闭合
         },
         options: {
+          elements: {
+            point: {
+              rotation: data.wind.datasets[0].pointRotation
+            }
+          },
           responsive: true,
           maintainAspectRatio: false,
           scales: {
@@ -186,22 +211,27 @@ export default {
                 text: 'Wind Speed (m/s)',
                 font: { size: 14 }
               },
-              ticks: { stepSize: 2 }
+              ticks: { stepSize: 2 },
+              grid: { 
+                color: (ctx) => 
+                  ctx.tick.value > 8 ? '#FF174420' :
+                  ctx.tick.value > 5 ? '#FF910020' :
+                  '#00E67620'
+              }
             }
           },
-          plugins: {
+          plugins: {  // 修复插件配置的闭合
             legend: {
               labels: { font: { size: 14 } }
             },
             tooltip: {
-              bodyFont: { size: 14 },
               callbacks: {
                 label: (ctx) => {
                   const speed = ctx.parsed.y;
                   const dir = ctx.dataset.pointRotation[ctx.dataIndex];
                   return [
-                    `风速: ${speed.toFixed(1)} m/s`,
-                    `风向: ${getWindDirectionText(dir)} (${dir.toFixed(0)}°)`
+                    `▲ 风速: ${speed.toFixed(1)} m/s`,
+                    `➤ 风向: ${getWindDirectionText(dir)} (${dir.toFixed(0)}°)`
                   ];
                 }
               }
@@ -259,12 +289,21 @@ export default {
 }
 
 .wind-chart {
-  height: 350px;
-  background: #f8f9fa;
+  height: 400px;
+  background: linear-gradient(45deg, #f8f9fa 0%, #ffffff 100%);
+  border: 1px solid #e0e0e0;
 }
 
 .main-chart:hover, .wind-chart:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+canvas {
+  transition: opacity 0.3s ease;
+}
+
+.chart-container:hover canvas {
+  opacity: 0.9;
 }
 </style>
