@@ -5,7 +5,7 @@ const nmea = require('node-nmea');
 
 // Configuration InfluxDB
 
-const token = fs.readFileSync('/home/formation/run/secrets/token.txt', 'utf8').trim();
+const token = fs.readFileSync('/run/secrets/token.txt', 'utf8').trim();
 
 
 
@@ -32,8 +32,6 @@ function readSensorDataAndStore() {
         filesProcessed: 0
     };
     files.forEach(file => readFileAndStore(file, collectedData));
-    setTimeout(readSensorDataAndStore, 100000);
-
 }
 
 function readFileAndStore(filePath, collectedData) {
@@ -188,7 +186,6 @@ async function fetchInfluxDBData(bucket, token, org, days) {
         }
 
         const data = await response.text(); // Récupérer les données en texte brut (CSV)
-        console.log("Données récupérées:", data); // Log des données brutes
 
         // Organiser les données sans utiliser csv-parse
         const organizedData = organizeDataByDate(data);
@@ -210,12 +207,12 @@ function organizeDataByDate(csvData) {
         const columns = line.split(","); // Séparer les colonnes par virgule
         return {
             date: columns[5],   // La date se trouve à l'index 5
-            value: columns[6],  // La valeur se trouve à l'index 6
+            value: Math.floor(columns[6] * 100) / 100,  // La valeur se trouve à l'index 6
             field: columns[7]   // Le champ se trouve à l'index 7
         };
     });
 
-    console.log("Données extraites : ", extractedData);
+
     let organizedData = {}
     let tab = {};
     tab[extractedData[0].field] = extractedData[0].value;
