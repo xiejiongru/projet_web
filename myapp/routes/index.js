@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-const { readSensorDataAndStore } = require('../recupdata'); // Corrige l'import
+// const { readSensorDataAndStore } = require('../recupdata'); // Corrige l'import
 
 const { InfluxDB } = require('@influxdata/influxdb-client');
 const influxConfig = {
